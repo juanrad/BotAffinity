@@ -1,11 +1,16 @@
 import os
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import requests
 import logging
+
+from bot_affinity.conversation import pray, bible_quote
 
 _API_URL = 'https://filmaffinity-unofficial.herokuapp.com/api/'
 _API_SEARCH = 'search?'
 _API_MOVIE = 'movie/'
+
+_films_cache = []
 
 
 def _api_film_id(query: str):
@@ -30,23 +35,41 @@ def _film_url(id: int):
     return 'https://www.filmaffinity.com/us/film{}.html'.format(str(id))
 
 
-def _find(bot_updater, context):
+def _find(bot_updater, context, number=5):  # TODO: change signature
     if len(context.args) < 1:
         return _help_find(bot_updater)
     query = str.join(' ', context.args)
-    id_request = requests.get(_API_URL + _API_SEARCH, _api_film_id(query)).json()
-    if len(id_request) < 1:
+    ids_request = requests.get(_API_URL + _API_SEARCH, _api_film_id(query)).json()
+    if len(ids_request) < 1:
         return _film_not_found(bot_updater, query)
-    film_id = id_request[0]['id']
-    film_url = _film_url(film_id)
-    film_metadata = _api_film_metadata(film_id)
-    return {'id': film_id, 'url': film_url, 'metadata': film_metadata}
+    n = 1
+    global _films_cache
+    _films_cache = []
+    for id in ids_request:
+        if n > number:
+            break
+        film_id = id['id']
+        film_url = _film_url(film_id)
+        film_metadata = _api_film_metadata(film_id)
+        _films_cache.append({'id': film_id, 'url': film_url, 'metadata': film_metadata})
+        n += 1
+    return _films_cache
 
 
 def share(bot_updater, context):
-    film = _find(bot_updater, context)
-    user = bot_updater.message.from_user
-    bot_updater.message.reply_text("{} recomends {} ".format(user.first_name, film['url']))
+    _find(bot_updater, context, 5)
+
+    keyboard = []
+    n = 1
+    for film in _films_cache:
+        button = InlineKeyboardButton(
+            '{} ({}) from {}'.format(film['metadata']['title'], film['metadata']['year'], film['metadata']['director']),
+            callback_data=str(n))
+        keyboard.append([button])
+        n += 1
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    bot_updater.message.reply_text('Nice! Please choose the movie you want to share:', reply_markup=reply_markup)
 
 
 def helpme(bot_updater, context):
@@ -55,30 +78,12 @@ def helpme(bot_updater, context):
             bot_updater.message.from_user.first_name))
 
 
-def bible_quote(bot_updater, context):
-    bot_updater.message.reply_text('https://www.youtube.com/watch?v=P-_A6gqda44')
-
-
-def pray(bot_updater, context):
-    bot_updater.message.reply_text(
-        """
-This is my rifle. There are many like it, but this one is mine.
-My rifle is my best friend. It is my life. 
-I must master it as I must master my life.
-Without me, my rifle is useless. 
-Without my rifle, I am useless. 
-I must fire my rifle true. 
-I must shoot straighter than my enemy who is trying to kill me. 
-I must shoot him before he shoots me. I will ... 
-Before God, I swear this creed. 
-My rifle and myself are the defenders of my country. 
-We are the masters of our enemy. 
-We are the saviors of my life.
-So be it, until there is no enemy, but peace. 
-
-Amen.
-"""
-    )
+def choose_film_button(bot_updater, context):
+    query = bot_updater.callback_query
+    film_index = int(query.data) - 1
+    film = _films_cache[film_index]
+    user = bot_updater.effective_user
+    query.edit_message_text(text="{} recomends {} ".format(user.first_name, film['url']))
 
 
 def main():
@@ -89,6 +94,8 @@ def main():
     dispatcher = bot_updater.dispatcher
 
     dispatcher.add_handler(CommandHandler('share', share))
+    dispatcher.add_handler(CommandHandler('film', share))
+    dispatcher.add_handler(CallbackQueryHandler(choose_film_button))
     dispatcher.add_handler(CommandHandler('biblequote', bible_quote))
     dispatcher.add_handler(CommandHandler('pray', pray))
     dispatcher.add_handler(CommandHandler('help', helpme))
