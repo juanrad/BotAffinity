@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
