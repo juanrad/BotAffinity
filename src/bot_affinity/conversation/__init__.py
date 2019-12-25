@@ -1,3 +1,8 @@
+HELP_SHARE = " To share a film use /share or /film followed with the movie you are thinking on, " + \
+             "as in '/share Godfather' or '/film Gremlins' and choose in the search proposals. " + \
+             "Happy sharing."
+
+
 def pray(bot_updater, context):
     bot_updater.message.reply_text(
         """
