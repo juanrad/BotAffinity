@@ -42,7 +42,8 @@ def share(bot_updater, context):
 
 def helpme(bot_updater, context):
     bot_updater.message.reply_text(
-        "Hello {}! I'm BotAffinity, I can find Filmaffinty pages for you. Try /find to begin.".format(
+        "Hello {}! I'm BotAffinity, I can find Filmaffinty pages for you." +
+        " Try /film or /share followed by any movie name to begin.".format(
             bot_updater.message.from_user.first_name))
 
 
