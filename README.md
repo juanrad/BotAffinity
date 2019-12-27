@@ -23,6 +23,6 @@ PYTHONPATH=$PYTHONPATH:$(pwd)/src TOKEN="YOUR_TOKEN" python src/bot_affinity/__i
 ### Docker
 
 ```bash
-docker container run --rm -e TOKEN="YOUR_TOKEN" bot_affinity:latest
+docker container run --rm -e TOKEN="YOUR_TOKEN" kilaweo/bot_affinity:latest
 ```
 
