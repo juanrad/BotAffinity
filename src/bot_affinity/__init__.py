@@ -42,9 +42,9 @@ def share(bot_updater, context):
 
 def helpme(bot_updater, context):
     bot_updater.message.reply_text(
-        "Hello {}! I'm BotAffinity, I can find Filmaffinty pages for you." +
-        " Try /film or /share followed by any movie name to begin.".format(
-            bot_updater.message.from_user.first_name))
+        ("Hello {}! I'm BotAffinity, I can find Filmaffinty pages for you." +
+         " Try /film or /share followed by any movie name to begin.").format(
+            bot_updater.message.from_user['first_name']))
 
 
 def choose_film_button(bot_updater, context):
@@ -53,6 +53,12 @@ def choose_film_button(bot_updater, context):
     film = _films_cache[film_index]
     user = bot_updater.effective_user
     query.edit_message_text(text="{} recomends {} ".format(user.first_name, film['url']))
+
+
+def error(bot_updater, context):
+    bot_updater.message.reply_text(
+        "Something go wrong 😭 : " + context.error +
+        ". Use /help to learn how to use this bot or consider posting an issue.")
 
 
 def main():
@@ -64,10 +70,13 @@ def main():
 
     dispatcher.add_handler(CommandHandler('share', share))
     dispatcher.add_handler(CommandHandler('film', share))
+    dispatcher.add_handler(CommandHandler('find', share))
     dispatcher.add_handler(CallbackQueryHandler(choose_film_button))
     dispatcher.add_handler(CommandHandler('biblequote', bible_quote))
     dispatcher.add_handler(CommandHandler('pray', pray))
+    dispatcher.add_handler(CommandHandler('hello', helpme))
     dispatcher.add_handler(CommandHandler('help', helpme))
+    dispatcher.add_error_handler(error)
 
     bot_updater.start_polling()
     bot_updater.idle()
